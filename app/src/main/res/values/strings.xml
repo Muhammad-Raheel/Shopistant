@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ShopistantContent</string>
+    <string name="app_name">Shopistant Content</string>
 
     <style name="FAB">
         <item name="android:layout_margin">0dp</item>
@@ -14,4 +14,9 @@
     <string name="txt_product_quntity">Quantity</string>
     <string name="txt_product_price">Price:</string>
     <string name="product_price">Enter Product Price</string>
+    <string name="login">Login</string>
+    <string name="Password">Password</string>
+    <string name="Username">Email Address</string>
+    <string name="go">GO</string>
+    <string name="register">Register</string>
 </resources>

@@ -2,38 +2,57 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/gray"
     android:gravity="center">
-    <android.support.design.widget.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
+    <ImageView
+        android:visibility="gone"
+        android:id="@+id/img_promo_edit"
+        android:layout_width="220dp"
+        android:layout_height="220dp" />
+    <EditText
+        android:visibility="gone"
+        android:id="@+id/edt_promo_edit"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/round_button"
+        android:layout_centerHorizontal="true"
+        android:layout_width="400dp"
+        android:layout_marginBottom="10dp"
+        android:padding="5dp"
+        android:gravity="top"
+        android:lines="5"
+        android:layout_height="120dp"
+        android:layout_below="@+id/img_promo"
+        android:hint="Enter Promotion Details here"/>
+
         <EditText
+
             android:id="@+id/fragment_product_name"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="350dp"
+            android:layout_height="60dp"
+            android:background="@drawable/round_button"
             android:hint="Name"
-            android:gravity="center"
+            android:paddingLeft="5dp"
+            android:layout_marginBottom="20dp"
+            android:layout_gravity="center_horizontal"
             android:singleLine="true"
             android:textSize="25sp"
             />
-    </android.support.design.widget.TextInputLayout>
-    <android.support.design.widget.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
 
-        >
         <EditText
+
             android:id="@+id/fragment_product_price"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="350dp"
+            android:layout_height="60dp"
+            android:paddingLeft="5dp"
+            android:background="@drawable/round_button"
             android:hint="Price"
-            android:gravity="center"
+            android:layout_gravity="center_horizontal"
             android:inputType="numberDecimal"
             android:singleLine="true"
             android:textSize="25sp"
             />
-    </android.support.design.widget.TextInputLayout>
     <LinearLayout
+        android:id="@+id/l_edt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -43,10 +62,10 @@
             android:id="@+id/fragment_btn_decrease"
             android:layout_width="40dp"
             android:layout_height="40dp"
+            style="@style/ButtonCustome"
             android:text="-"
             android:textSize="17sp"
             android:textColor="@android:color/white"
-            android:backgroundTint="@color/colorAccent"
             android:textStyle="bold"/>
         <EditText
             android:id="@+id/fragment_edt_product_qunatitiy"
@@ -56,13 +75,14 @@
             android:textAlignment="center"/>
         <Button
             android:id="@+id/fragment_btn_increase"
+            style="@style/ButtonCustome"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:text="+"
             android:textStyle="bold"
             android:textSize="17sp"
             android:textColor="@android:color/white"
-            android:backgroundTint="@color/colorAccent"/>
+            />
     </LinearLayout>
 
     <Button
@@ -70,8 +90,19 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/marginTop"
         android:layout_gravity="center"
-        android:backgroundTint="@color/colorAccent"
         android:text="Update"
+        style="@style/ButtonCustome"
         android:textColor="@android:color/white"
         android:id="@+id/fragment_btn_update"/>
+
+    <Button
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/marginTop"
+        android:layout_gravity="center"
+        android:text="Remove"
+        style="@style/ButtonCustome"
+        android:textColor="@android:color/white"
+        android:id="@+id/fragment_btn_remove"/>
+
 </LinearLayout>

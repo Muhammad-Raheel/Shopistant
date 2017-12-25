@@ -27,9 +27,9 @@ public class SearchListAdapter extends FirebaseListAdapter<Product> implements F
         TextView textView= (TextView) v.findViewById(R.id.txt_item);
         final TextView rate= (TextView) v.findViewById(R.id.txt_rate);
         HashMap<String,Object> mapRate=model.getRating();
-        String rateString=mapRate.get("rating").toString();
+        double rateString=round(Double.parseDouble(mapRate.get("rating").toString()),1);
         String rateByNum=mapRate.get("ratedByNum").toString();
-        rate.setText(rateString+"/"+rateByNum);
+        rate.setText(""+rateString+"/"+rateByNum);
         textView.setText(model.getName());
     }
 
@@ -61,6 +61,15 @@ public class SearchListAdapter extends FirebaseListAdapter<Product> implements F
             }
         }
     };
+
+    public double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
+    }
 
 
 }

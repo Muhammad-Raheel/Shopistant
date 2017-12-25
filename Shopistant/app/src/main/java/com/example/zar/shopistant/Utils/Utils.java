@@ -23,11 +23,13 @@ public class Utils {
 
     private Context mContext;
     private static final String TAG = "Utils";
+
     public Utils(Context mContext) {
         this.mContext=mContext;
     }
 
     private static FirebaseDatabase mDatabase;
+
     public static FirebaseDatabase getDatabase() {
         if (mDatabase == null) {
             mDatabase = FirebaseDatabase.getInstance();

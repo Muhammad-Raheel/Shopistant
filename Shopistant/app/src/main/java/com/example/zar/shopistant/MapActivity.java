@@ -1,5 +1,6 @@
 package com.example.zar.shopistant;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -7,16 +8,26 @@ import android.graphics.Canvas;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.os.CountDownTimer;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
-
+import android.widget.TextView;
+import com.bumptech.glide.Glide;
 import com.example.zar.shopistant.Utils.Utils;
 import com.example.zar.shopistant.model.Point;
 import com.example.zar.shopistant.model.Product;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
@@ -25,7 +36,12 @@ public class MapActivity extends AppCompatActivity {
     // global variables used by current context
 
     private ArrayList<Product> mShoppingList ;
+    private ArrayList<Product> mPromotionList;
     private Utils mUtils;
+    private ImageView promoImage;
+    private TextView txtDetails;
+    private AlertDialog dialog;
+    private Button btnCancel,btnTrack;
     boolean isLeftSide=false;
     boolean isRightSide=false;
     int mMinOfLeft=0;
@@ -34,10 +50,11 @@ public class MapActivity extends AppCompatActivity {
     ImageView routeView;
     Path path;
     Paint paint;
+
     private static final String TAG = "MapActivity";
 
-    /*
-    * Method overladen from AppCompactActivity part of activity life cycle to run initialize the screen and run all code.
+    /**
+    * Method override from AppCompactActivity part of activity life cycle to run initialize the screen and run all code.
     * */
 
     @Override
@@ -51,11 +68,56 @@ public class MapActivity extends AppCompatActivity {
         +" Min Right"+mMinOfRight+" Min Left"+mMinOfLeft));
     }
 
-    /*
+    /**
     * Initialization of all components used in current context
     * */
 
     public void initComponent() {
+        mPromotionList=new ArrayList<>();
+
+        final Query query= FirebaseDatabase.getInstance().getReference()
+                .child("products").orderByChild("promo").equalTo("true");
+
+        ValueEventListener listener=new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue()!=null) {
+                    Log.e("tag",""+dataSnapshot.getChildrenCount());
+                    for (DataSnapshot snapshot:dataSnapshot.getChildren()) {
+                        Product product=snapshot.getValue(Product.class);
+                        mPromotionList.add(product);
+                        //Log.e("tag", product.getDetails());
+                    }
+                }
+                query.removeEventListener(this);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        query.addListenerForSingleValueEvent(listener);
+
+        new CountDownTimer(600000, 10000) {
+            int i=0;
+            public void onTick(long millisUntilFinished) {
+
+                if (mPromotionList.size()>i) {
+                    Product p=mPromotionList.get(i);
+                    if (dialog!=null && dialog.isShowing()) {
+                        dialog.dismiss();
+                    }
+                    showPromo(p);
+                    i++;
+                }
+            }
+
+            public void onFinish() {
+
+            }
+        }.start();
+
         points=new ArrayList<>();
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
@@ -79,7 +141,52 @@ public class MapActivity extends AppCompatActivity {
 
     }
 
-    /*
+    /**
+     * showing promotion dialog
+     * */
+
+    public void showPromo(final Product p) {
+        final ProgressDialog progressDialog=new ProgressDialog(this);
+        progressDialog.setMessage("uploading...");
+        AlertDialog.Builder alertDialog=new AlertDialog.Builder(this);
+        LayoutInflater inflater=this.getLayoutInflater();
+        dialog=alertDialog.create();
+        View dialogView=inflater.inflate(R.layout.dialog_promotion,null);
+        dialog.setView(dialogView);
+
+        dialog.show();
+        btnCancel= (Button) dialog.findViewById(R.id.btn_cancel);
+        btnTrack= (Button) dialog.findViewById(R.id.btn_track);
+        promoImage= (ImageView) dialog.findViewById(R.id.dialog_img);
+        txtDetails= (TextView) dialog.findViewById(R.id.dialog_details);
+        Glide.with(MapActivity.this).load(p.getImg())
+                .into(promoImage);
+        txtDetails.setText(p.getDetails());
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
+        btnTrack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mShoppingList.add(p);
+                points.clear();
+                isLeftSide=false;
+                isRightSide=false;
+                mMinOfLeft=0;
+                mMinOfRight=0;
+                path.reset();
+                switchChases();
+                generateRoute();
+                dialog.dismiss();
+                Log.e("tag","clicked");
+            }
+        });
+    }
+
+    /**
     * pin point positions configurations
     * */
 
@@ -90,111 +197,198 @@ public class MapActivity extends AppCompatActivity {
             switch (aisle){
                 case "a01":
                     ImageView a01= (ImageView) findViewById(R.id.pin_a01);
-                    a01.setVisibility(View.VISIBLE);
+                    ImageView a01_p= (ImageView) findViewById(R.id.pin_p_a01);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a01_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a01.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
                     mMinOfRight=1;
                     break;
                 case "a02":
                     ImageView a02= (ImageView) findViewById(R.id.pin_a02);
                     a02.setVisibility(View.VISIBLE);
+                    ImageView a02_p= (ImageView) findViewById(R.id.pin_p_a02);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a02_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a02.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    if (mMinOfRight==0 || mMinOfRight>2) {
                         mMinOfRight=2;
                     }
                     break;
                 case "a03":
                     ImageView a03= (ImageView) findViewById(R.id.pin_a03);
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    ImageView a03_p= (ImageView) findViewById(R.id.pin_p_a03);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a03_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a03.setVisibility(View.VISIBLE);
+                    }
+                    if (mMinOfRight==0 || mMinOfRight>3) {
                         mMinOfRight=3;
                     }
-                    a03.setVisibility(View.VISIBLE);
                     break;
                 case "a04":
                     ImageView a04= (ImageView) findViewById(R.id.pin_a04);
+                    ImageView a04_p= (ImageView) findViewById(R.id.pin_p_a04);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a04_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a04.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    if (mMinOfRight==0 || mMinOfRight>4) {
                         mMinOfRight=4;
                     }
-                    a04.setVisibility(View.VISIBLE);
                     break;
                 case "a05":
                     ImageView a05= (ImageView) findViewById(R.id.pin_a05);
+                    ImageView a05_p= (ImageView) findViewById(R.id.pin_p_a05);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a05_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a05.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    if (mMinOfRight==0 || mMinOfRight>5) {
                         mMinOfRight=5;
                     }
-                    a05.setVisibility(View.VISIBLE);
                     break;
                 case "a06":
                     ImageView a06= (ImageView) findViewById(R.id.pin_a06);
+                    ImageView a06_p= (ImageView) findViewById(R.id.pin_p_a06);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a06_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a06.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    if (mMinOfRight==0 || mMinOfRight>6) {
                         mMinOfRight=6;
                     }
-                    a06.setVisibility(View.VISIBLE);
                     break;
                 case "a07":
                     ImageView a07= (ImageView) findViewById(R.id.pin_a07);
+                    ImageView a07_p= (ImageView) findViewById(R.id.pin_p_a07);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a07_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a07.setVisibility(View.VISIBLE);
+                    }
                     isRightSide=true;
-                    if (mMinOfRight==0) {
+                    if (mMinOfRight==0 || mMinOfRight>7) {
                         mMinOfRight=7;
                     }
-                    a07.setVisibility(View.VISIBLE);
                     break;
                 case "a08":
                     ImageView a08= (ImageView) findViewById(R.id.pin_a08);
+                    ImageView a08_p= (ImageView) findViewById(R.id.pin_p_a08);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a08_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a08.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
                     mMinOfLeft=8;
-                    a08.setVisibility(View.VISIBLE);
                     break;
                 case "a09":
                     ImageView a09= (ImageView) findViewById(R.id.pin_a09);
+                    ImageView a09_p= (ImageView) findViewById(R.id.pin_p_a09);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a09_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a09.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>9) {
                         mMinOfLeft=9;
                     }
-                    a09.setVisibility(View.VISIBLE);
+
                     break;
                 case "a10":
                     ImageView a10= (ImageView) findViewById(R.id.pin_a10);
+                    ImageView a10_p= (ImageView) findViewById(R.id.pin_p_a10);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a10_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a10.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>10) {
                         mMinOfLeft=10;
                     }
-                    a10.setVisibility(View.VISIBLE);
                     break;
                 case "a11":
                     ImageView a11= (ImageView) findViewById(R.id.pin_a11);
+                    ImageView a11_p= (ImageView) findViewById(R.id.pin_p_a11);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a11_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a11.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>11) {
                         mMinOfLeft=11;
                     }
-                    a11.setVisibility(View.VISIBLE);
                     break;
                 case "a12":
                     ImageView a12= (ImageView) findViewById(R.id.pin_a12);
+                    ImageView a12_p= (ImageView) findViewById(R.id.pin_p_a12);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a12_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a12.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>12) {
                         mMinOfLeft=12;
                     }
-                    a12.setVisibility(View.VISIBLE);
                     break;
                 case "a13":
                     ImageView a13= (ImageView) findViewById(R.id.pin_a13);
+                    ImageView a13_p= (ImageView) findViewById(R.id.pin_p_a13);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a13_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a13.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>13) {
                         mMinOfLeft=13;
                     }
-                    a13.setVisibility(View.VISIBLE);
                     break;
                 case "a14":
                     ImageView a14= (ImageView) findViewById(R.id.pin_a14);
+                    ImageView a14_p= (ImageView) findViewById(R.id.pin_p_a14);
+                    if (mShoppingList.get(i).getImg()!=null) {
+                        a14_p.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        a14.setVisibility(View.VISIBLE);
+                    }
                     isLeftSide=true;
-                    if (mMinOfLeft==0) {
+                    if (mMinOfLeft==0 || mMinOfLeft>14) {
                         mMinOfLeft=14;
                     }
-                    a14.setVisibility(View.VISIBLE);
+
                     break;
                 default:
                     Log.e(TAG,"default switch aisle");
@@ -203,22 +397,23 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
-    /*
+    /**
     * generating shortest route possible for the pin points marked according to shopping list.
     * */
 
     public void generateRoute() {
 
         if (isLeftSide && isRightSide) {
-            if (mMinOfRight<4) {
-                //round path
-                Log.e(TAG,"all true");
-                 roundPath();
-            }
-            else if (mMinOfLeft>=11 && mMinOfRight>=4) {
+            if ( mMinOfLeft>=11 && mMinOfRight>=4) {
+
                 //not round path
                 Log.e(TAG,"not round true");
                 pathReturn();
+            }
+            else  {
+                //round path
+                Log.e(TAG,"all true");
+                roundPath();
             }
         }
 
@@ -240,7 +435,7 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
-    /*
+    /**
     * drawing route on canvas by given points
     * */
 
@@ -254,15 +449,18 @@ public class MapActivity extends AppCompatActivity {
             }
 
         }
+
         Bitmap bitmap = Bitmap.createBitmap((int) getWindowManager()
                 .getDefaultDisplay().getWidth(), (int) getWindowManager()
                 .getDefaultDisplay().getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         routeView.setImageBitmap(bitmap);
+        //routeView.animate().translationXBy(1000f).setDuration(2000);
         canvas.drawPath(path,paint);
+
     }
 
-    /*
+    /**
     * when there is pinpoints on both sides of aisle this path will be drown.
     * */
 
@@ -357,7 +555,7 @@ public class MapActivity extends AppCompatActivity {
         pointListOnRoute(points);
     }
 
-    /*
+    /**
     * This is the complete path followed around aisle.
     * */
 
@@ -378,7 +576,7 @@ public class MapActivity extends AppCompatActivity {
 
     }
 
-    /*
+    /**
     * when pinpoints only marked on right side this path will be follow.
     * */
 
@@ -412,7 +610,7 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
-    /*
+    /**
     * when pinpoints only marked on left side this path will be follow.
     * */
 
@@ -446,7 +644,7 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
-    /*
+    /**
     * The points which will be going to select for right side path only.
     * */
 
@@ -466,7 +664,7 @@ public class MapActivity extends AppCompatActivity {
         pointListOnRoute(points);
     }
 
-    /*
+    /**
     * The points which will be going to select for left side path only.
     * */
 
@@ -492,7 +690,7 @@ public class MapActivity extends AppCompatActivity {
         pointListOnRoute(points);
     }
 
-    /*
+    /**
     * This method used to convert the pixels into dp (Display independent pixels). To make it responsive for kind of screen sizes.
     * */
 

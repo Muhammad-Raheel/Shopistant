@@ -10,17 +10,38 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:layout_centerHorizontal="true"
     >
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="0.8"
         android:orientation="vertical">
+        <RelativeLayout
+            android:visibility="gone"
+            android:id="@+id/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:textColor="@color/colorPrimary"
+                android:textStyle="bold"
+                android:text="No item's found"
+                android:layout_centerInParent="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </RelativeLayout>
         <ListView
+            android:divider="@null"
+            android:dividerHeight="10dp"
             android:id="@+id/list_item"
             android:layout_width="match_parent"
             android:layout_height="match_parent"></ListView>
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:visibility="gone"
+            android:layout_centerInParent="true"/>
 
-    </LinearLayout>
+    </RelativeLayout>
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"

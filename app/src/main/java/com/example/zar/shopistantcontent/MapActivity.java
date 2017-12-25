@@ -5,8 +5,10 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class MapActivity extends AppCompatActivity implements View.OnClickListener{
-    Button a01,a02,a03,a04,a05,a06,a07,a08,a09,a10,a11,a12,a13,a14;
+    Button a01,a02,a03,a04,a05,a06,a07,a08,a09,a10,a11,a12,a13,a14,signOut;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,8 +28,10 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         a12.setOnClickListener(this);
         a13.setOnClickListener(this);
         a14.setOnClickListener(this);
+        signOut.setOnClickListener(this);
     }
     public void initComponent(){
+        signOut= (Button) findViewById(R.id.btn_sign_out);
         a01= (Button) findViewById(R.id.a_01);
         a02= (Button) findViewById(R.id.a_02);
         a03= (Button) findViewById(R.id.a_03);
@@ -89,6 +93,11 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
             case R.id.a_14:
                 intent("a14");
                 break;
+            case R.id.btn_sign_out:
+                Intent intent=new Intent(MapActivity.this,LoginActivity.class);
+                startActivity(intent);
+                FirebaseAuth.getInstance().signOut();
+                finish();
         }
     }
 

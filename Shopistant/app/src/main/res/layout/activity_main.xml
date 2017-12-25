@@ -4,6 +4,7 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/gray"
     android:orientation="vertical"
     android:focusable="true"
     tools:context="com.example.zar.shopistant.MainActivity">
@@ -24,25 +25,35 @@
             android:drawableLeft="@drawable/ic_action_search"
             android:background="@android:color/white"/>
     </android.support.v7.widget.Toolbar>
+
     <TextView
         android:id="@+id/txt_billed"
         android:layout_below="@+id/app_bar"
         android:text="Amount billed"
-        android:visibility="gone"
         android:layout_marginTop="10dp"
         android:layout_marginRight="10dp"
-        android:textAlignment="textEnd"
         android:textSize="16sp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_width="150dp"
+        android:padding="8dp"
+        android:textColor="@android:color/white"
+        android:background="@color/colorPrimary"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:visibility="gone"
+        android:layout_alignParentRight="true"/>
+
     <ListView
         android:layout_below="@+id/txt_billed"
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:paddingBottom="@dimen/activity_horizontal_margin"
         android:id="@+id/list_item"
+        android:divider="@null"
+        android:dividerHeight="5dp"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></ListView>
+        android:layout_above="@+id/btn_locate"
+        android:layout_height="match_parent"
+        ></ListView>
     <ProgressBar
         android:id="@+id/progress_bar"
         android:visibility="invisible"
@@ -87,7 +98,7 @@
             android:paddingTop="8dp"
             android:text="@string/empty_view_subtitle_text"
             android:textAppearance="?android:textAppearanceSmall"
-            android:textColor="#A2AAB0"/>
+            android:textColor="#717171"/>
     </RelativeLayout>
     <Button
         android:id="@+id/btn_locate"

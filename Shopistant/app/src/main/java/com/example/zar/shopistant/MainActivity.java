@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.DataSetObserver;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -15,10 +17,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
@@ -54,11 +58,12 @@ public class MainActivity extends AppCompatActivity {
     private static ArrayList<String> mKeys;
     private ShoppingListAdapter mShoppingListAdapter;
     private Utils mUtils;
-    private double mAvgRating;
     private ProgressBar progressBar;
-    private double mRatingFromDb;
     private static final String TAG = "MainActivity";
-    private static final String DEVICE_ID=Build.SERIAL;
+
+    /**
+    * Method override from AppCompactActivity part of activity life cycle to run initialize the screen and run all code.
+    * */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         searchProduct();
     }
 
-    /*
+    /**
     * Option menu on the right top corner configurations
     * */
 
@@ -79,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    /*
+    /**
     * When any item selected from option menu
     * */
 
@@ -95,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    /*
+    /**
     * Initializations of all global variable used in the current context MainActivity
     * */
 
@@ -103,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar=(Toolbar) findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
         mListView= (ListView) findViewById(R.id.list_item);
+        mListView.setSelector(new ColorDrawable(Color.TRANSPARENT));
         btnLocate= (Button) findViewById(R.id.btn_locate);
         txtBilled= (TextView) findViewById(R.id.txt_billed);
         btnLocate.setOnClickListener(new View.OnClickListener() {
@@ -127,166 +133,16 @@ public class MainActivity extends AppCompatActivity {
             int billed=0;
             for (int i=0; i<mShoppingList.size(); i++) {
 
-                billed+=Integer.parseInt(mShoppingList.get(i).getPrice());
+                billed+=Integer.parseInt(mShoppingList.get(i).getPrice())*mShoppingList.get(i).getQuantity();
             }
             txtBilled.setText("Total bill: Rs. "+billed);
         }
         mShoppingListAdapter=new ShoppingListAdapter(this,mShoppingList,mKeys);
         mListView.setAdapter(mShoppingListAdapter);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String key=mKeys.get(position);
-                rateAndReview(key);
-            }
-        });
-
-
-    }
-
-    /*
-    * Dialog for adding rating item selected from shopping list
-    * */
-
-    public void rateAndReview(final String productKey){
-        AlertDialog.Builder alertDialog=new AlertDialog.Builder(this);
-
-        LayoutInflater inflater=this.getLayoutInflater();
-        View dialogView=inflater.inflate(R.layout.rate_review_dailogue,null);
-        alertDialog.setView(dialogView);
-        final RatingBar ratingBar= (RatingBar) dialogView.findViewById(R.id.rating_bar);
-        final DatabaseReference referenceSet=mUtils.getDatabase().getReference().child("rating").child(productKey);
-        final DatabaseReference reference=referenceSet.child("productRated");
-        ValueEventListener listener=new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.getValue()!=null) {
-                    mRatingFromDb= dataSnapshot.getValue(Double.class);
-                    Log.e(TAG,""+mRatingFromDb);
-                    reference.removeEventListener(this);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        } ;
-        reference.addListenerForSingleValueEvent(listener);
-
-        alertDialog.setPositiveButton("Rate", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                final double rating=ratingBar.getRating();
-                averageRate(rating);
-                final DatabaseReference ref=mUtils.getDatabase().getReference().child("rating").child(productKey).child("ratedBy").child(DEVICE_ID);
-                Log.e(TAG," "+ref);
-                ValueEventListener listener=new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        HashMap<String,Object> ratedMap=(HashMap<String,Object>) dataSnapshot.getValue();
-                        if (ratedMap!=null && ratedMap.size()!=0) {
-                            Toast.makeText(MainActivity.this,"You can't add an other rate for this product. Thanks",Toast.LENGTH_LONG).show();
-                            Log.e(TAG,"Product Rated Before");
-                        }
-                        else {
-                            HashMap<String,Object> ratingHash=new HashMap<>();
-                            ratingHash.put("productRated",mAvgRating);
-                            referenceSet.updateChildren(ratingHash);
-                            productRatedBy(DEVICE_ID,productKey,mAvgRating);
-                            Toast.makeText(MainActivity.this,"Product Rated",Toast.LENGTH_SHORT).show();
-                            Log.e(TAG,"Not rated before");
-                        }
-                        ref.removeEventListener(this);
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                };
-                ref.addListenerForSingleValueEvent(listener);
-
-            }
-        });
-        alertDialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-
-        });
-        alertDialog.show();
-    }
-
-    /*
-    *  Adding unique device id for the product rated by the user once only.
-    * */
-
-    public void productRatedBy(String deviceId, final String key, final double rate) {
-
-        final DatabaseReference ref=mUtils.getDatabase().getReference().child("rating").child(key).child("ratedBy").child(deviceId);
-        ValueEventListener listener=new ValueEventListener() {
-
-           @Override
-           public void onDataChange(DataSnapshot dataSnapshot) {
-               if (dataSnapshot.getValue()==null) {
-
-                   HashMap<String,Object> rated=new HashMap<>();
-                   rated.put("rated","true");
-                   ref.setValue(rated);
-                   final DatabaseReference reference=mUtils.getDatabase().getReference().child("products").child(key).child("rating");
-                   final Query referenceCount=mUtils.getDatabase().getReference().child("rating").child(key).child("ratedBy");
-
-                   ValueEventListener listener1=new ValueEventListener() {
-                       @Override
-                       public void onDataChange(DataSnapshot dataSnapshot) {
-
-                           long count=dataSnapshot.getChildrenCount();
-                           HashMap<String,Object> rating=new HashMap<>();
-                           rating.put("rating",rate);
-                           rating.put("ratedByNum",count);
-                           reference.updateChildren(rating);
-                           referenceCount.removeEventListener(this);
-
-                       }
-
-                       @Override
-                       public void onCancelled(DatabaseError databaseError) {
-
-                       }
-                   };
-                   referenceCount.addListenerForSingleValueEvent(listener1);
-
-               }
-               ref.removeEventListener(this);
-           }
-
-           @Override
-           public void onCancelled(DatabaseError databaseError) {
-
-           }
-       };
-       ref.addListenerForSingleValueEvent(listener);
-    }
-
-    /*
-    * Average rate calculations
-    * */
-
-    public void averageRate(double rating) {
-        if (mRatingFromDb!=0.0) {
-            mAvgRating=(rating+mRatingFromDb)/2;
-            Log.e(TAG,"average Rate :"+mAvgRating);
-        }
-
-        else {
-            mAvgRating=rating;
-        }
     }
 
 
-    /*
+    /**
     * searching products from firebase and adding into a list.
     * */
 
@@ -340,22 +196,37 @@ public class MainActivity extends AppCompatActivity {
                         for(DataSnapshot childSnapShot: dataSnapshot.getChildren()) {
                             String key=childSnapShot.getKey();
                             Product product=childSnapShot.getValue(Product.class);
-                            mKeys.add(key);
-                            mShoppingList.add(product);
-                            mListView.setAdapter(mShoppingListAdapter);
-                            mAutoCompleteTextView.setText("");
-                            mUtils.addArrayListToSf(mShoppingList);
-                            mUtils.addStringArrayListSF(mKeys);
-                            if (mKeys.size()!=0) {
-                                btnLocate.setVisibility(View.VISIBLE);
-                                txtBilled.setVisibility(View.VISIBLE);
-                                int billed=0;
-                                for (int i=0; i<mShoppingList.size(); i++) {
-
-                                    billed+=Integer.parseInt(mShoppingList.get(i).getPrice());
+                            product.setQuantity(1);
+                            boolean flag=true;
+                            for (int i=0; i<mKeys.size(); i++) {
+                                if (mKeys!=null && mKeys.get(i).equals(key)) {
+                                    flag=false;
+                                    break;
                                 }
-                                txtBilled.setText("Total bill: Rs. "+billed);
+                            }
+                            if (flag) {
+                                mKeys.add(key);
+                                mShoppingList.add(product);
+                                mShoppingListAdapter = new ShoppingListAdapter(MainActivity.this, mShoppingList, mKeys);
+                                mListView.setAdapter(mShoppingListAdapter);
+                                mAutoCompleteTextView.setText("");
+                                mUtils.addArrayListToSf(mShoppingList);
+                                mUtils.addStringArrayListSF(mKeys);
+                                if (mKeys.size() != 0) {
+                                    btnLocate.setVisibility(View.VISIBLE);
+                                    txtBilled.setVisibility(View.VISIBLE);
+                                    int billed = 0;
+                                    for (int i = 0; i < mShoppingList.size(); i++) {
 
+                                        billed += Integer.parseInt(mShoppingList.get(i).getPrice())*mShoppingList.get(i).getQuantity();
+                                    }
+                                    txtBilled.setText("Total bill: Rs. " + billed);
+
+                                }
+                            }
+                            else {
+                                mAutoCompleteTextView.setText("");
+                                Toast.makeText(MainActivity.this,"Already exist in list",Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -370,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /*
+    /**
     * updating U.I by data changed in ShoppingListAdapter Class.
     * */
 
@@ -385,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
             int billed=0;
             for (int i=0; i<mShoppingList.size(); i++) {
 
-                billed+=Integer.parseInt(mShoppingList.get(i).getPrice());
+                billed+=Integer.parseInt(mShoppingList.get(i).getPrice())*mShoppingList.get(i).getQuantity();
             }
             txtBilled.setText("Total bill: Rs. "+billed);
         }
