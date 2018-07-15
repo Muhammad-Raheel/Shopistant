@@ -10,6 +10,8 @@ import android.os.Build;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -51,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
     private static Button btnLocate;
     private static TextView txtBilled;
     private ListView mListView;
-    private View mEmptyView;
+    private RecyclerView recyclerView;
+    private static View mEmptyView;
     private Query mReference;
     private SearchListAdapter mSearchListAdapter;
     private static ArrayList<Product> mShoppingList;
@@ -73,32 +76,6 @@ public class MainActivity extends AppCompatActivity {
         searchProduct();
     }
 
-    /**
-    * Option menu on the right top corner configurations
-    * */
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.translation_menu,menu);
-
-        return true;
-    }
-
-    /**
-    * When any item selected from option menu
-    * */
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id=item.getItemId();
-        switch (id){
-            case R.id.product_translation:
-                return true;
-            default:
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
     /**
     * Initializations of all global variable used in the current context MainActivity
@@ -107,10 +84,11 @@ public class MainActivity extends AppCompatActivity {
     public void initComponent() {
         Toolbar toolbar=(Toolbar) findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
-        mListView= (ListView) findViewById(R.id.list_item);
+       /* mListView= (ListView) findViewById(R.id.list_item);
         mListView.setSelector(new ColorDrawable(Color.TRANSPARENT));
-        btnLocate= (Button) findViewById(R.id.btn_locate);
+      */btnLocate= (Button) findViewById(R.id.btn_locate);
         txtBilled= (TextView) findViewById(R.id.txt_billed);
+        recyclerView=(RecyclerView) findViewById(R.id.recycler_view);
         btnLocate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -124,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
         mKeys=new ArrayList<>();
         mUtils=new Utils(this);
         progressBar= (ProgressBar) findViewById(R.id.progress_bar);
-        mListView.setEmptyView(mEmptyView);
+        //mListView.setEmptyView(mEmptyView);
         mShoppingList=mUtils.getArrayListFromSf();
         mKeys=mUtils.getStringArrayListFromSF();
         if (mKeys.size()!=0) {
@@ -137,8 +115,14 @@ public class MainActivity extends AppCompatActivity {
             }
             txtBilled.setText("Total bill: Rs. "+billed);
         }
+        else {
+            mEmptyView.setVisibility(View.VISIBLE);
+        }
+        RecyclerView.LayoutManager manager=new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(manager);
         mShoppingListAdapter=new ShoppingListAdapter(this,mShoppingList,mKeys);
-        mListView.setAdapter(mShoppingListAdapter);
+        recyclerView.setAdapter(mShoppingListAdapter);
+        //mListView.setAdapter(mShoppingListAdapter);
     }
 
 
@@ -159,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 String searchString=mAutoCompleteTextView.getText().toString();
                 if (!searchString.equals("") && mUtils.checkNetwork(MainActivity.this)) {
                     progressBar.setVisibility(View.VISIBLE);
-                    mReference = mUtils.getDatabase().getReference().child("products").orderByChild("name").startAt(searchString).endAt(searchString + "\uf8ff");
+                    mReference = FirebaseDatabase.getInstance().getReference().child("products").orderByChild("name").startAt(searchString).endAt(searchString + "\uf8ff");
                     mSearchListAdapter=new SearchListAdapter(MainActivity.this,Product.class,R.layout.single_list_item,mReference);
                     mAutoCompleteTextView.setAdapter(mSearchListAdapter);
                     mAutoCompleteTextView.showDropDown();
@@ -189,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.INVISIBLE);
                 String name=mAutoCompleteTextView.getText().toString();
                 //Log.e(TAG,mSearchListAdapter.getRef(position).getKey());
-                final Query reference=mUtils.getDatabase().getReference().child("products").orderByChild("name").equalTo(name);
+                final Query reference=FirebaseDatabase.getInstance().getReference().child("products").orderByChild("name").equalTo(name);
                 reference.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -208,7 +192,9 @@ public class MainActivity extends AppCompatActivity {
                                 mKeys.add(key);
                                 mShoppingList.add(product);
                                 mShoppingListAdapter = new ShoppingListAdapter(MainActivity.this, mShoppingList, mKeys);
-                                mListView.setAdapter(mShoppingListAdapter);
+                               // mListView.setAdapter(mShoppingListAdapter);
+                                recyclerView.setAdapter(mShoppingListAdapter);
+                                mEmptyView.setVisibility(View.GONE);
                                 mAutoCompleteTextView.setText("");
                                 mUtils.addArrayListToSf(mShoppingList);
                                 mUtils.addStringArrayListSF(mKeys);
@@ -261,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
             txtBilled.setText("Total bill: Rs. "+billed);
         }
         else {
-
+            mEmptyView.setVisibility(View.VISIBLE);
             txtBilled.setVisibility(View.INVISIBLE);
             btnLocate.setVisibility(View.INVISIBLE);
         }

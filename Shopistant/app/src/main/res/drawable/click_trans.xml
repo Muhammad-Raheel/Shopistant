@@ -3,8 +3,5 @@
     <item android:state_pressed="true"
         android:drawable="@color/effect" />//ur onclick desired color
     <item  android:state_focused="false"
-        android:drawable="@android:color/transparent" />focused color
-
-    <item  android:state_selected="true"
-        android:drawable="@color/colorPrimary" />
+        android:drawable="@color/colorPrimaryDark" />focused color
 </selector>

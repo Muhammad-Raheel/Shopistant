@@ -171,6 +171,7 @@ public class ShelfsActivity extends AppCompatActivity {
         final EditText name= (EditText) dialogView.findViewById(R.id.add_dialog_edt_product_name);
         final EditText quantity= (EditText) dialogView.findViewById(R.id.add_dialog_edt_product_qunatitiy);
         final EditText price= (EditText) dialogView.findViewById(R.id.add_dialog_edt_product_price);
+        final EditText trans= (EditText) dialogView.findViewById(R.id.edt_p_trans);
         Button  increase= (Button) dialogView.findViewById(R.id.add_dialog_btn_increase);
         Button decrease= (Button) dialogView.findViewById(R.id.add_dialog_btn_decrease);
         increase.setOnClickListener(new View.OnClickListener() {
@@ -197,12 +198,17 @@ public class ShelfsActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (!name.getText().toString().equals("") && !price.getText().toString().equals("")){
-                    HashMap<String,Object> rating=new HashMap<String, Object>();
-                    rating.put("rating",0);
-                    rating.put("ratedByNum",0);
-                    Product product=new Product(name.getText().toString(),quantityInt,aislePosition,price.getText().toString(),rating);
-                    DatabaseReference allRef=FirebaseDatabase.getInstance().getReference().child("products").push();
+                    String translation=trans.getText().toString();
+                    HashMap<String, Object> rating = new HashMap<String, Object>();
+                    rating.put("rating", 0);
+                    rating.put("ratedByNum", 0);
+                    Product product = new Product(name.getText().toString(), quantityInt, aislePosition, price.getText().toString(), rating);
+                    if (!translation.equals("")) {
+                        product.setTranslation(translation);
+                    }
+                    DatabaseReference allRef = FirebaseDatabase.getInstance().getReference().child("products").push();
                     allRef.setValue(product);
+
                 }
 
             }
@@ -282,6 +288,7 @@ public class ShelfsActivity extends AppCompatActivity {
 
 
     }
+
     @SuppressLint("RestrictedApi")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -311,7 +318,9 @@ public class ShelfsActivity extends AppCompatActivity {
         }
         else {
             for (Fragment fragment : getSupportFragmentManager().getFragments()) {
-                fragment.onActivityResult(requestCode, resultCode, data);
+                if (data!=null) {
+                    fragment.onActivityResult(requestCode, resultCode, data);
+                }
             }
         }
     }

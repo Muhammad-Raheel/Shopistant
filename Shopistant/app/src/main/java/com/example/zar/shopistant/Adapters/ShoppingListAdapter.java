@@ -1,20 +1,18 @@
 package com.example.zar.shopistant.Adapters;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Build;
-import android.support.annotation.NonNull;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,62 +24,55 @@ import com.example.zar.shopistant.R;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-import com.google.gson.Gson;
 
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by Zar on 4/29/2017.
  */
 
-public class ShoppingListAdapter extends ArrayAdapter<Product> {
+public class ShoppingListAdapter extends RecyclerView.Adapter<ItemsViewHolder> {
     private static final String TAG = "ShoppingListAdapter";
     private ArrayList<Product> shoppingList;
     private ArrayList<String> keys;
     private double mAvgRating;
     private double mRatingFromDb;
     private static final String DEVICE_ID= Build.SERIAL;
-
     Activity mContext;
 
     public ShoppingListAdapter(Activity context, ArrayList<Product> shoppingList, ArrayList<String> keys){
-        super(context,0,shoppingList);
         this.shoppingList=shoppingList;
         this.keys=keys;
         this.mContext=context;
     }
 
     @Override
-    public View getView(final int position, View convertView, ViewGroup parent) {
-        View listItemView = convertView;
-        if(listItemView == null) {
-            listItemView = LayoutInflater.from(getContext()).inflate(
-                    R.layout.single_shopping_list_item, parent, false);
+    public ItemsViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.single_shopping_list_item, parent, false);
+        ItemsViewHolder holder=new ItemsViewHolder(v);
+        return holder;
+    }
+
+
+    @Override
+    public void onBindViewHolder(ItemsViewHolder h, final int position) {
+
+        final Product item=shoppingList.get(position);
+
+        if (item.getTranslation()!=null && !item.getTranslation().equals("")) {
+            h.transLayout.setVisibility(View.VISIBLE);
         }
 
-        final Product item=getItem(position);
         Log.e(TAG,item.getPrice());
-        ViewHolder h=new ViewHolder();
-        h.txtName= (TextView) listItemView.findViewById(R.id.text_view_active_list_item_name);
-        h.txtBill= (TextView) listItemView.findViewById(R.id.text_view_price);
-        h.txtRate= (TextView) listItemView.findViewById(R.id.txt_rate_b);
-        h.txtQuantity= (TextView) listItemView.findViewById(R.id.txt_quantity);
-        h.btnInc= (Button) listItemView.findViewById(R.id.btn_inc);
-        h.btnDec= (Button) listItemView.findViewById(R.id.btn_dec);
-        h.rateLayout= (LinearLayout) listItemView.findViewById(R.id.lv_rate);
-        h.deleteLayout= (LinearLayout) listItemView.findViewById(R.id.lv_delete);
-        h.txtCategory= (TextView) listItemView.findViewById(R.id.txt_category);
         char[] array=item.getName().toCharArray();
         int count=0;
-
         for (int i=0; i<array.length; i++) {
             String current=""+array[i];
             if (current.equals(" ")) {
@@ -115,9 +106,9 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
         h.deleteLayout.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
-                AlertDialog.Builder alertDialogBuilder=new AlertDialog.Builder(getContext(),R.style.CustomTheme_Dialog)
-                        .setTitle(getContext().getString(R.string.remove_item_option))
-                        .setMessage(getContext().getString(R.string.dialog_message_are_you_sure_remove_item))
+                AlertDialog.Builder alertDialogBuilder=new AlertDialog.Builder(mContext,R.style.CustomTheme_Dialog)
+                        .setTitle(mContext.getString(R.string.remove_item_option))
+                        .setMessage(mContext.getString(R.string.dialog_message_are_you_sure_remove_item))
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -147,7 +138,7 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
         h.btnInc.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               inc(item,position);
+                inc(item,position);
             }
         });
 
@@ -158,8 +149,29 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
             }
         });
 
-        return listItemView;
+        h.transLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                transDialog(item);
+            }
+        });
     }
+
+    @Override
+    public int getItemCount() {
+        return shoppingList.size();
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return super.getItemId(position);
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return super.getItemViewType(position);
+    }
+
 
     /**
      * removing an item from list
@@ -208,12 +220,23 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
     }
 
     /**
-    * Holding U.I element for single item
+    * Dialog for translation
     * */
-    public static class ViewHolder {
-        LinearLayout rateLayout,deleteLayout;
-        Button btnInc,btnDec;
-        TextView txtQuantity,txtRate,txtBill,txtName,txtCategory;
+
+    public void transDialog(Product product) {
+        AlertDialog.Builder alertDialog=new AlertDialog.Builder(mContext);
+        LayoutInflater inflater=mContext.getLayoutInflater();
+        final View dialog=inflater.inflate(R.layout.translation_dialog,null);
+        TextView txt=(TextView) dialog.findViewById(R.id.txt_trans);
+        alertDialog.setView(dialog);
+        txt.setText(product.getTranslation());
+        alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+        alertDialog.show();
     }
 
     /**
@@ -227,7 +250,7 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
         View dialogView=inflater.inflate(R.layout.rate_review_dailogue,null);
         alertDialog.setView(dialogView);
         final RatingBar ratingBar= (RatingBar) dialogView.findViewById(R.id.rating_bar);
-        final DatabaseReference referenceSet=mUtils.getDatabase().getReference().child("rating").child(productKey);
+        final DatabaseReference referenceSet= FirebaseDatabase.getInstance().getReference().child("rating").child(productKey);
         final DatabaseReference reference=referenceSet.child("productRated");
         ValueEventListener listener=new ValueEventListener() {
             @Override
@@ -250,7 +273,7 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
             public void onClick(DialogInterface dialog, int which) {
                 final double rating=ratingBar.getRating();
                 averageRate(rating);
-                final DatabaseReference ref=mUtils.getDatabase().getReference().child("rating").child(productKey).child("ratedBy").child(DEVICE_ID);
+                final DatabaseReference ref=FirebaseDatabase.getInstance().getReference().child("rating").child(productKey).child("ratedBy").child(DEVICE_ID);
                 ValueEventListener listener=new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -309,7 +332,7 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
 
     public void productRatedBy(String deviceId, final String key, final double rate, final Product item, final int id) {
         final Utils mUtils=new Utils(mContext);
-        final DatabaseReference ref=mUtils.getDatabase().getReference().child("rating").child(key).child("ratedBy").child(deviceId);
+        final DatabaseReference ref=FirebaseDatabase.getInstance().getReference().child("rating").child(key).child("ratedBy").child(deviceId);
         ValueEventListener listener=new ValueEventListener() {
 
             @Override
@@ -319,8 +342,8 @@ public class ShoppingListAdapter extends ArrayAdapter<Product> {
                     HashMap<String,Object> rated=new HashMap<>();
                     rated.put("rated","true");
                     ref.setValue(rated);
-                    final DatabaseReference reference=mUtils.getDatabase().getReference().child("products").child(key).child("rating");
-                    final Query referenceCount=mUtils.getDatabase().getReference().child("rating").child(key).child("ratedBy");
+                    final DatabaseReference reference=FirebaseDatabase.getInstance().getReference().child("products").child(key).child("rating");
+                    final Query referenceCount=FirebaseDatabase.getInstance().getReference().child("rating").child(key).child("ratedBy");
 
                     ValueEventListener listener1=new ValueEventListener() {
                         @Override

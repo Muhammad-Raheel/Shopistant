@@ -8,7 +8,7 @@ import java.util.HashMap;
  */
 
 public class Product implements Serializable {
-    private String name,aislePosition,price,details,img;
+    private String name,aislePosition,price,details,img,translation;
     private int quantity;
     private HashMap<String,Object> rating;
     public Product(){}
@@ -19,6 +19,10 @@ public class Product implements Serializable {
         this.aislePosition=aislePosition;
         this.price=price;
         this.rating=rating;
+    }
+
+    public String getTranslation() {
+        return translation;
     }
 
     public void setDetails(String details) {

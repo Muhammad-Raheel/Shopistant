@@ -45,9 +45,11 @@ public class MapActivity extends AppCompatActivity {
     boolean isLeftSide=false;
     boolean isRightSide=false;
     int mMinOfLeft=0;
+    private int i=0;
     int mMinOfRight=0;
     ArrayList<Point> points;
     ImageView routeView;
+    private CountDownTimer timer;
     Path path;
     Paint paint;
 
@@ -88,6 +90,7 @@ public class MapActivity extends AppCompatActivity {
                         mPromotionList.add(product);
                         //Log.e("tag", product.getDetails());
                     }
+                    startCounter();
                 }
                 query.removeEventListener(this);
             }
@@ -99,24 +102,7 @@ public class MapActivity extends AppCompatActivity {
         };
         query.addListenerForSingleValueEvent(listener);
 
-        new CountDownTimer(600000, 10000) {
-            int i=0;
-            public void onTick(long millisUntilFinished) {
 
-                if (mPromotionList.size()>i) {
-                    Product p=mPromotionList.get(i);
-                    if (dialog!=null && dialog.isShowing()) {
-                        dialog.dismiss();
-                    }
-                    showPromo(p);
-                    i++;
-                }
-            }
-
-            public void onFinish() {
-
-            }
-        }.start();
 
         points=new ArrayList<>();
         DisplayMetrics displaymetrics = new DisplayMetrics();
@@ -146,8 +132,11 @@ public class MapActivity extends AppCompatActivity {
      * */
 
     public void showPromo(final Product p) {
-        final ProgressDialog progressDialog=new ProgressDialog(this);
-        progressDialog.setMessage("uploading...");
+       /* final ProgressDialog progressDialog=new ProgressDialog(this);
+        progressDialog.setMessage("uploading...");*/
+       if (timer!=null) {
+           timer.cancel();
+       }
         AlertDialog.Builder alertDialog=new AlertDialog.Builder(this);
         LayoutInflater inflater=this.getLayoutInflater();
         dialog=alertDialog.create();
@@ -166,6 +155,7 @@ public class MapActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 dialog.dismiss();
+                startCounter();
             }
         });
         btnTrack.setOnClickListener(new View.OnClickListener() {
@@ -181,7 +171,7 @@ public class MapActivity extends AppCompatActivity {
                 switchChases();
                 generateRoute();
                 dialog.dismiss();
-                Log.e("tag","clicked");
+                startCounter();
             }
         });
     }
@@ -209,7 +199,6 @@ public class MapActivity extends AppCompatActivity {
                     break;
                 case "a02":
                     ImageView a02= (ImageView) findViewById(R.id.pin_a02);
-                    a02.setVisibility(View.VISIBLE);
                     ImageView a02_p= (ImageView) findViewById(R.id.pin_p_a02);
                     if (mShoppingList.get(i).getImg()!=null) {
                         a02_p.setVisibility(View.VISIBLE);
@@ -691,7 +680,7 @@ public class MapActivity extends AppCompatActivity {
     }
 
     /**
-    * This method used to convert the pixels into dp (Display independent pixels). To make it responsive for kind of screen sizes.
+    * This method used to convert the pixels into dp (Display independent pixels). To make it responsive for different kind of screen sizes.
     * */
 
     public float convertPixelsToDp(float px, Context context){
@@ -701,4 +690,39 @@ public class MapActivity extends AppCompatActivity {
         Log.e("tag",String.valueOf(metrics.densityDpi));
         return dp;
     }
- }
+
+    /**
+     * start timer for showing promotions
+     * */
+
+    public void startCounter() {
+        timer=new CountDownTimer(10000, 10000) {
+
+            public void onTick(long millisUntilFinished) {
+
+            }
+            public void onFinish() {
+                if (i<mPromotionList.size()) {
+                    Product p = mPromotionList.get(i);
+                    if (dialog != null && dialog.isShowing()) {
+                        dialog.dismiss();
+                    }
+                    showPromo(p);
+                    i++;
+                }
+            }
+        }.start();
+    }
+
+    /**
+     * disabling timer on destroying activity
+    * */
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (timer!=null) {
+            timer.cancel();
+        }
+    }
+}
