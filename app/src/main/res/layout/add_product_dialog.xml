@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:background="@color/gray"
+    android:layout_height="match_parent"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/add_dialog_edt_product_name"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:paddingLeft="10dp"
+        android:background="@drawable/round_button"
+        android:hint="@string/product_name"/>
+    <EditText
+        android:layout_marginTop="@dimen/marginTop"
+        android:paddingLeft="10dp"
+        android:id="@+id/add_dialog_edt_product_price"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:inputType="numberDecimal"
+        android:background="@drawable/round_button"
+        android:hint="@string/product_price"/>
+   <LinearLayout
+       android:layout_marginTop="30dp"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content">
+       <Button
+           android:id="@+id/add_dialog_btn_decrease"
+           android:layout_width="40dp"
+           android:layout_height="40dp"
+           android:text="-"
+           android:textSize="17sp"
+           android:textColor="@android:color/white"
+           style="@style/Button"
+           android:textStyle="bold"/>
+       <EditText
+           android:id="@+id/add_dialog_edt_product_qunatitiy"
+           android:layout_width="50dp"
+           android:layout_height="wrap_content"
+           android:text="0"
+           android:textAlignment="center"/>
+       <Button
+           android:id="@+id/add_dialog_btn_increase"
+           android:layout_width="40dp"
+           android:layout_height="40dp"
+           android:text="+"
+           android:textStyle="bold"
+           android:textSize="17sp"
+           android:textColor="@android:color/white"
+           style="@style/Button"/>
+
+   </LinearLayout>
+    <EditText
+        android:layout_marginTop="15dp"
+        android:id="@+id/edt_p_trans"
+        android:layout_gravity="center"
+        android:background="@drawable/round_button"
+        android:layout_width="400dp"
+        android:padding="5dp"
+        android:gravity="top"
+        android:lines="5"
+        android:layout_height="120dp"
+        android:hint="Product Translation (Optional)"/>
+
+</LinearLayout>
